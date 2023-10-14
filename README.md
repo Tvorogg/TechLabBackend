@@ -1,4 +1,4 @@
-# TechLab backend
+# TechLab Backend
 
 ## General info
 Backend проекта TechLab 
@@ -9,8 +9,7 @@ Backend проекта TechLab
 ### Technologies
 * Spring-boot
 * Spring Security
-* CI/CD (Github Actions)
-* Checkstyle
+
 
 ### ToDo:
 * JWT 
