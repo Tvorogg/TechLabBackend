@@ -1,17 +1,16 @@
 package techlab.backend.configuration;
 
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
-import org.springframework.security.core.userdetails.User;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
 
 import static org.springframework.security.config.Customizer.withDefaults;
@@ -19,6 +18,12 @@ import static org.springframework.security.config.Customizer.withDefaults;
 @Configuration
 @EnableWebSecurity
 public class SpringSecurityConfig {
+
+    private final UserDetailsService userDetailsService;
+
+    public SpringSecurityConfig(@Qualifier("userDetailsServiceImpl") UserDetailsService userDetailsService) {
+        this.userDetailsService = userDetailsService;
+    }
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -30,11 +35,12 @@ public class SpringSecurityConfig {
                                 .requestMatchers("/swagger-ui/**", "/swagger-resources/**", "/v2/api-docs/**",
                                         "/v3/api-docs/**").permitAll()
                                 .requestMatchers("/api/v1/signup", "/api/v1/signin").permitAll()
-                                .requestMatchers("/api/v1/users/**").hasRole("USER")
-                                .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
-                                .anyRequest().authenticated())
+                                .requestMatchers("/api/v1/users/**").hasAnyAuthority("ADMIN", "USER")
+                                .requestMatchers("/api/v1/admin/**").hasAuthority("ADMIN")
+                                .anyRequest().denyAll())
                 //.anyRequest().denyAll()
-                //.formLogin(withDefaults()
+                //.formLogin(withDefaults())
+
                 .httpBasic(withDefaults()
 
                 );
@@ -42,40 +48,34 @@ public class SpringSecurityConfig {
     }
 
     @Bean
-    public InMemoryUserDetailsManager inMemoryUserDetailsManager() {
-        return new InMemoryUserDetailsManager();
-    }
-
-    @Bean
-    public UserDetailsService userDetailsService(InMemoryUserDetailsManager inMemoryUserDetailsManager) {
-
-        UserDetails user = User.builder()
-                .username("user")
-                .password(passwordEncoder().encode("pass"))
-                .roles("USER")
-                .build();
-        UserDetails admin = User.builder()
-                .username("admin")
-                .password(passwordEncoder().encode("pass"))
-                .roles("USER", "ADMIN")
-                .build();
-        inMemoryUserDetailsManager.createUser(user);
-        inMemoryUserDetailsManager.createUser(admin);
-        return inMemoryUserDetailsManager;
-    }
-
-    @Bean
-    public DaoAuthenticationProvider inMemoryDaoAuthenticationProvider() {
+    public DaoAuthenticationProvider daoAuthenticationProvider() {
         DaoAuthenticationProvider daoAuthenticationProvider = new DaoAuthenticationProvider();
-        daoAuthenticationProvider.setUserDetailsService(inMemoryUserDetailsManager());
+        daoAuthenticationProvider.setUserDetailsService(userDetailsService);
+        daoAuthenticationProvider.setPasswordEncoder(passwordEncoder());
+        return daoAuthenticationProvider;
+    }
+
+    @Bean
+    AuthenticationProvider authenticationProvider(DaoAuthenticationProvider daoAuthenticationProvider) {
+        daoAuthenticationProvider.setUserDetailsService(userDetailsService);
         daoAuthenticationProvider.setPasswordEncoder(passwordEncoder());
         return daoAuthenticationProvider;
     }
 
 //    @Bean
-//    public AuthenticationManager authenticationManager(AuthenticationConfiguration authenticationConfiguration)
-//            throws Exception {
-//        return authenticationConfiguration.getAuthenticationManager();
+//    AuthenticationManager authenticationManager(AuthenticationConfiguration configuration) throws Exception {
+//        return configuration.getAuthenticationManager();
+//    }
+//
+//    @Bean
+//    public AuthenticationManager authenticationManager(
+//            PasswordEncoder passwordEncoder,
+//            DaoAuthenticationProvider authenticationProvider
+//    ) {
+//        authenticationProvider.setUserDetailsService(userDetailsService);
+//        authenticationProvider.setPasswordEncoder(passwordEncoder);
+//
+//        return new ProviderManager(authenticationProvider);
 //    }
 
 
@@ -84,3 +84,5 @@ public class SpringSecurityConfig {
         return new BCryptPasswordEncoder(12);
     }
 }
+
+
