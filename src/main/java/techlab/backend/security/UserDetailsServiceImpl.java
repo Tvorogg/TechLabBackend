@@ -1,13 +1,11 @@
-package techlab.backend.repository.jpa.security;
+package techlab.backend.security;
 
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
-
-import java.util.Collections;
+import techlab.backend.repository.jpa.security.UserSecurity;
+import techlab.backend.repository.jpa.security.UserSecurityRepository;
 
 @Service(value = "userDetailsServiceImpl")
 public class UserDetailsServiceImpl implements UserDetailsService {
@@ -22,8 +20,7 @@ public class UserDetailsServiceImpl implements UserDetailsService {
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
         UserSecurity userSecurity = userSecurityRepository.findByName(username).orElseThrow( ()->
                 new UsernameNotFoundException("No user is found"));
-        //UserDetails userDetailsReeturn = UserDetailsImpl.fromUser(userSecurity);
-        //return userDetailsReeturn;
-        return new User(userSecurity.getName(), userSecurity.getPassword(), Collections.singleton(new SimpleGrantedAuthority(userSecurity.getRole())));
+
+        return userSecurity;
     }
 }

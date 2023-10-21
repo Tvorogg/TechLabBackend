@@ -3,32 +3,36 @@ package techlab.backend.configuration;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.security.authentication.AuthenticationProvider;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.ProviderManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
-
-import static org.springframework.security.config.Customizer.withDefaults;
+import techlab.backend.security.JwtConfigurer;
 
 @Configuration
 @EnableWebSecurity
 public class SpringSecurityConfig {
 
     private final UserDetailsService userDetailsService;
+    private final JwtConfigurer jwtConfigurer;
 
-    public SpringSecurityConfig(@Qualifier("userDetailsServiceImpl") UserDetailsService userDetailsService) {
+    public SpringSecurityConfig(@Qualifier("userDetailsServiceImpl") UserDetailsService userDetailsService, JwtConfigurer jwtConfigurer) {
         this.userDetailsService = userDetailsService;
+        this.jwtConfigurer = jwtConfigurer;
     }
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
                 .csrf(AbstractHttpConfigurer::disable)
+                .sessionManagement((session) -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 
                 .authorizeHttpRequests((request) ->
                         request
@@ -38,46 +42,37 @@ public class SpringSecurityConfig {
                                 .requestMatchers("/api/v1/users/**").hasAnyAuthority("ADMIN", "USER")
                                 .requestMatchers("/api/v1/admin/**").hasAuthority("ADMIN")
                                 .anyRequest().denyAll())
-                //.anyRequest().denyAll()
-                //.formLogin(withDefaults())
+                .apply(jwtConfigurer);
+        //.formLogin(withDefaults())
 
-                .httpBasic(withDefaults()
+        //.httpBasic(withDefaults()
 
-                );
+        //);
         return http.build();
     }
 
-    @Bean
-    public DaoAuthenticationProvider daoAuthenticationProvider() {
-        DaoAuthenticationProvider daoAuthenticationProvider = new DaoAuthenticationProvider();
-        daoAuthenticationProvider.setUserDetailsService(userDetailsService);
-        daoAuthenticationProvider.setPasswordEncoder(passwordEncoder());
-        return daoAuthenticationProvider;
-    }
-
-    @Bean
-    AuthenticationProvider authenticationProvider(DaoAuthenticationProvider daoAuthenticationProvider) {
-        daoAuthenticationProvider.setUserDetailsService(userDetailsService);
-        daoAuthenticationProvider.setPasswordEncoder(passwordEncoder());
-        return daoAuthenticationProvider;
-    }
-
 //    @Bean
-//    AuthenticationManager authenticationManager(AuthenticationConfiguration configuration) throws Exception {
-//        return configuration.getAuthenticationManager();
-//    }
-//
-//    @Bean
-//    public AuthenticationManager authenticationManager(
-//            PasswordEncoder passwordEncoder,
-//            DaoAuthenticationProvider authenticationProvider
-//    ) {
-//        authenticationProvider.setUserDetailsService(userDetailsService);
-//        authenticationProvider.setPasswordEncoder(passwordEncoder);
-//
-//        return new ProviderManager(authenticationProvider);
+//    public DaoAuthenticationProvider daoAuthenticationProvider() {
+//        DaoAuthenticationProvider daoAuthenticationProvider = new DaoAuthenticationProvider();
+//        daoAuthenticationProvider.setUserDetailsService(userDetailsService);
+//        daoAuthenticationProvider.setPasswordEncoder(passwordEncoder());
+//        return daoAuthenticationProvider;
 //    }
 
+//    @Bean
+//    AuthenticationProvider authenticationProvider(DaoAuthenticationProvider daoAuthenticationProvider) {
+//        daoAuthenticationProvider.setUserDetailsService(userDetailsService);
+//        daoAuthenticationProvider.setPasswordEncoder(passwordEncoder());
+//        return daoAuthenticationProvider;
+//    }
+
+    @Bean
+    public AuthenticationManager authenticationManager() {
+        DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
+        authProvider.setUserDetailsService(userDetailsService);
+        authProvider.setPasswordEncoder(passwordEncoder());
+        return new ProviderManager(authProvider);
+    }
 
     @Bean
     public PasswordEncoder passwordEncoder() {
