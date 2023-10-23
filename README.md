@@ -5,13 +5,14 @@ Backend проекта TechLab
 
 ### Requirements
 * Maven
+* Spring-boot 3.1.4
 
 ### Technologies
-* Spring-boot
 * Spring Security
-
+* Spring Data JPA
+* Postgres
 
 ### ToDo:
-* JWT 
 * Postgres + JPA
+* Email confirmation
 
