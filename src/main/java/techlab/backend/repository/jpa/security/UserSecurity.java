@@ -17,26 +17,28 @@ public class UserSecurity implements UserDetails {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name="id")
+    @Column(name = "id")
     private Long id;
 
-    @Column(name="name")
+    @Column(name = "user_unique_id")
+    private Long userUniqueId;
+
+    @Column(name = "name")
     private String name;
 
-    @Column(name="email")
+    @Column(name = "email")
     private String email;
 
-    @Column(name="role")
+    @Column(name = "role")
     private String role;
 
-    @Column(name="password")
+    @Column(name = "password")
     private String password;
 
-    @Column(name="status")
+    @Column(name = "status")
     private String status;
 
     public UserSecurity() {
-
     }
 
     @Override

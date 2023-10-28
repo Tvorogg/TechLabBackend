@@ -11,6 +11,7 @@ import org.springframework.stereotype.Component;
 import techlab.backend.repository.jpa.security.UserSecurity;
 import techlab.backend.repository.jpa.security.UserSecurityRepository;
 import techlab.backend.security.JwtTokenProvider;
+import techlab.backend.service.snowflake.SnowFlake;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -24,16 +25,18 @@ public class AuthServiceImpl implements AuthService {
     private final AuthenticationManager authenticationManager;
     private final UserSecurityRepository userSecurityRepository;
     private final JwtTokenProvider jwtTokenProvider;
+    private final SnowFlake snowFlake;
 
     { // test
         users.put(1L, new UserInfo("Peter", "qwerty", "piter@mail.ru", 3432));
     }
 
-    public AuthServiceImpl(PasswordEncoder passwordEncoder, AuthenticationManager authenticationManager, UserSecurityRepository userSecurityRepository, JwtTokenProvider jwtTokenProvider) {
+    public AuthServiceImpl(PasswordEncoder passwordEncoder, AuthenticationManager authenticationManager, UserSecurityRepository userSecurityRepository, JwtTokenProvider jwtTokenProvider, SnowFlake snowFlake) {
         this.passwordEncoder = passwordEncoder;
         this.authenticationManager = authenticationManager;
         this.userSecurityRepository = userSecurityRepository;
         this.jwtTokenProvider = jwtTokenProvider;
+        this.snowFlake = snowFlake;
     }
 
     public UserInfo getUserInfo(String email) {
@@ -53,6 +56,8 @@ public class AuthServiceImpl implements AuthService {
         userSecuritysave.setPassword(passwordEncoder.encode(usernamePasswordDto.password()));
         userSecuritysave.setStatus("active");
         userSecuritysave.setRole("user");
+        userSecuritysave.setUserUniqueId(snowFlake.nextId());
+
 
         userSecurityRepository.saveAndFlush(userSecuritysave);
         return new UserSignedUpResponseDto(usernamePasswordDto.username(), true, "USER");
