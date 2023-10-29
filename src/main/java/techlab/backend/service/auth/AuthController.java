@@ -2,9 +2,12 @@ package techlab.backend.service.auth;
 
 import io.swagger.v3.oas.annotations.Hidden;
 import io.swagger.v3.oas.annotations.Operation;
-import techlab.backend.dto.*;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import techlab.backend.dto.security.*;
+import techlab.backend.repository.jpa.courses.Courses;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1")
@@ -35,10 +38,18 @@ public class AuthController {
         return ResponseEntity.ok(result);
     }
 
-    @Operation(description = "Getting all registration information of the user by email, requires the 'admin' authorities")
-    @GetMapping("/admin/users-info/{email}")
-    public ResponseEntity<UserInfo> adminGetUserInfo(@PathVariable String email) {
-        UserInfo result = authService.getUserInfo(email);
+    @Operation(description = "Getting all registration information of all users, requires the 'admin' authorities")
+    @GetMapping("/admin/users-info")
+    public ResponseEntity<List<UserSecurityResponseDTO>> adminGetUserInfo() {
+        List<UserSecurityResponseDTO> result = authService.getAllUsers();
         return ResponseEntity.ok(result);
     }
+
+    @Operation(description = "Getting all registration information of all users, requires the 'admin' authorities")
+    @GetMapping("/admin/courses-info")
+    public ResponseEntity<List<Courses>> adminGetCoursesInfo() {
+        List<Courses> result = authService.getAllCourses();
+        return ResponseEntity.ok(result);
+    }
+
 }

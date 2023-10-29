@@ -6,15 +6,19 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import techlab.backend.dto.*;
 import org.springframework.stereotype.Component;
+import techlab.backend.dto.security.*;
+import techlab.backend.repository.jpa.courses.Courses;
+import techlab.backend.repository.jpa.courses.CoursesRepository;
 import techlab.backend.repository.jpa.security.UserSecurity;
 import techlab.backend.repository.jpa.security.UserSecurityRepository;
 import techlab.backend.security.JwtTokenProvider;
 import techlab.backend.service.snowflake.SnowFlake;
 
-import java.util.Map;
+import java.time.OffsetDateTime;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Component
@@ -24,6 +28,7 @@ public class AuthServiceImpl implements AuthService {
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
     private final UserSecurityRepository userSecurityRepository;
+    private final CoursesRepository coursesRepository;
     private final JwtTokenProvider jwtTokenProvider;
     private final SnowFlake snowFlake;
 
@@ -31,10 +36,11 @@ public class AuthServiceImpl implements AuthService {
         users.put(1L, new UserInfo("Peter", "qwerty", "piter@mail.ru", 3432));
     }
 
-    public AuthServiceImpl(PasswordEncoder passwordEncoder, AuthenticationManager authenticationManager, UserSecurityRepository userSecurityRepository, JwtTokenProvider jwtTokenProvider, SnowFlake snowFlake) {
+    public AuthServiceImpl(PasswordEncoder passwordEncoder, AuthenticationManager authenticationManager, UserSecurityRepository userSecurityRepository, CoursesRepository coursesRepository, JwtTokenProvider jwtTokenProvider, SnowFlake snowFlake) {
         this.passwordEncoder = passwordEncoder;
         this.authenticationManager = authenticationManager;
         this.userSecurityRepository = userSecurityRepository;
+        this.coursesRepository = coursesRepository;
         this.jwtTokenProvider = jwtTokenProvider;
         this.snowFlake = snowFlake;
     }
@@ -47,6 +53,30 @@ public class AuthServiceImpl implements AuthService {
         return users.get(1L);
     }
 
+    public List<UserSecurityResponseDTO> getAllUsers() {
+        List<UserSecurity> userSecurities = userSecurityRepository.findAllByIdBetween(1L, 111L);
+        return userSecurities.stream()
+                .map(user -> new UserSecurityResponseDTO(
+                        user.getId(),
+                        user.getUserUniqueId(),
+                        user.getName(),
+                        user.getEmail(),
+                        user.getRole(),
+                        user.getStatus(),
+                        user.getRegisteredAt(),
+                        user.getCourses()
+                ))
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<Courses> getAllCourses() {
+        List<Courses> courses = coursesRepository.findAllByIdBetween(0L, 111L);
+        log.info(String.valueOf(courses));
+        return courses;
+    }
+
+
     @Override
     public UserSignedUpResponseDto signUpUser(UserSignUpRequest usernamePasswordDto) {
 
@@ -57,6 +87,7 @@ public class AuthServiceImpl implements AuthService {
         userSecuritysave.setStatus("active");
         userSecuritysave.setRole("user");
         userSecuritysave.setUserUniqueId(snowFlake.nextId());
+        userSecuritysave.setRegisteredAt(OffsetDateTime.now());
 
 
         userSecurityRepository.saveAndFlush(userSecuritysave);
